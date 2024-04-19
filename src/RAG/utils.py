@@ -55,3 +55,4 @@ def init_logger(logger, cfg):
             logger.info(f"{key} : {value}")
     logger.info("=====================================")
     logger.info(">> Start training")
+    

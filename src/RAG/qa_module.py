@@ -41,5 +41,4 @@ class AnsweringModel:
         input_prompt = self.tokenizer.encode(prompt, return_tensors='pt')
         outputs = self.model.generate(input_prompt, max_new_tokens=max_new_tokens)
         answer = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-        
         return answer
