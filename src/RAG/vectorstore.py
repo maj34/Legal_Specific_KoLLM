@@ -32,4 +32,3 @@ def process_data(data, chunk_size, chunk_overlap, vectorstore_filepath, model_na
         processed_docs.extend(chunks)
         metadata.extend([{"source": doc['link']}] * len(chunks))
     _embedd_documents(processed_docs, metadata, vectorstore_filepath, model_name)
-    
