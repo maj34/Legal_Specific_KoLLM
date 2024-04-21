@@ -1,44 +1,43 @@
 import pandas as pd
 import omegaconf
+from tqdm import tqdm
 
-from src.RAG.vectorstore import process_data
-from src.RAG.utils import load_config, torch_seed
-from src.RAG.qa_module import RetrievalModel, AnsweringModel
-from src.RAG.make_results import make_results
+from utils import load_config, torch_seed
+from qa_module import load_qa_dataset, RetrievalModel, AnsweringModel
+from make_results import make_results
 
 def main(cfg : omegaconf.DictConfig):
     torch_seed(cfg.SEED)
 
-    # vectorstore 구축
-    datastore = pd.read_csv(cfg.DATA_PATH)
-    datastore = datastore.to_dict()
-    process_data(data=datastore, 
-                 chunk_size=cfg.DATA.CHUNK_SIZE, 
-                 chunk_overlap=cfg.DATA.CHUNK_OVERLAP, 
-                 vectorstore_filepath=cfg.VECTORSTORE_PATH, 
-                 model_name=cfg.MODEL_NAME)
-
     # generate answer
-    qa_data = pd.read_csv(cfg.QA_PATH)
+    qa_data = load_qa_dataset(cfg.QA_PATH)
+    print("QA data loaded")
+
     retriever = RetrievalModel(vectorstore_path=cfg.VECTORSTORE_PATH,
-                               model_name=cfg.MODEL.MODEL_NAME,
-                               search_type=cfg.MODEL.SEARCH_TYPE)
-    generator = AnsweringModel(model_name=cfg.MODEL.MODEL_NAME)
+                               search_type=cfg.MODEL.SEARCH_TYPE,
+                               max_docs=cfg.DATA.MAX_DOCS)
+    generator = AnsweringModel(prompt_path=cfg.PROMPT_PATH, model_name=cfg.MODEL.MODEL_NAME)
+    print("Models loaded")
     
-    relevant_docs, metadata = retriever.retrieve_question(question=qa_data['question'], max_docs=cfg.MAX_DOCS)
-    answer = generator.answer_question(question=qa_data['question'], 
-                                       relevant_docs=relevant_docs, 
-                                       metadata=metadata, 
-                                       max_new_tokens=cfg.MAX_NEW_TOKENS)
-    
-    output = make_results(data=qa_data, 
-                          relevant_docs=relevant_docs, 
-                          answer=answer, 
-                          metadata=metadata)
-    
-    # evaluate
-    # output['BLUE'] = 
-    output.to_csv(f"{cfg.RESULT_PATH}{cfg.MODEL_SHORT_NAME}_RAG_result", index=False)
+    result_name = f'{cfg.MODEL.MODEL_SHORT_NAME}_RAG_result.csv'
+    results = []
+    for key, item in tqdm(qa_data.items(), desc="Processing questions"):
+        question = item['question']
+        gold_answer = item['answer']
+        relevant_docs, metadata = retriever.retrieve_question(question)
+        answer = generator.answer_question(question=question, 
+                                           relevant_docs=relevant_docs, 
+                                           metadata=metadata, 
+                                           max_new_tokens=cfg.MODEL.MAX_NEW_TOKENS)
+        results.append(answer)
+        output = make_results(question=question,
+                              gold_answer=gold_answer,
+                              answer=answer,
+                              relevant_docs=relevant_docs,
+                              metadata=metadata,
+                              result_path=cfg.RESULT_PATH,
+                              result_name=result_name)
+    print("Results saved")
 
 if __name__ == "__main__":
     cfg = load_config()

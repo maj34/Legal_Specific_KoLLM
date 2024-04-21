@@ -1,0 +1,18 @@
+MODEL:
+  MODEL_NAME: "yanolja/EEVE-Korean-Instruct-10.8B-v1.0"
+  MODEL_SHORT_NAME: "eeve-instruct-10.8B"
+  EMBEDDING_MODEL_NAME: "jhgan/ko-sbert-nli"
+  SEARCH_TYPE: "similarity"
+  MAX_NEW_TOKENS: 150
+
+DATA:
+  CHUNK_SIZE: 300
+  CHUNK_OVERLAP: 0
+  MAX_DOCS: 3
+
+SEED: 100
+QA_PATH: './data/qa_dataset/qa_pairs_cleaned.json'
+DATASTORE_PATH: './data/vectorstore/all_merged_law_text_list.json'
+VECTORSTORE_PATH: './data/vectorstore/vectorstore.pkl'
+PROMPT_PATH: './prompt/RAG_Prompt.txt'
+RESULT_PATH: './results/'
