@@ -1,4 +1,4 @@
-# KoLLM (Korean Legal Language Model)
+# KoLLM: Korean-based Legal Language Model
 
 - 프로젝트 주제 : 법률 도메인 특화 한국어 기반 LLM 개발  
 - 프로젝트 기간 : 2024.03 ~ 2024.06  
