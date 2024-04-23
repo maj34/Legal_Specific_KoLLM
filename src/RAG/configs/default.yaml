@@ -12,6 +12,7 @@ DATA:
 
 SEED: 100
 QA_PATH: './data/qa_dataset/qa_pairs_cleaned.json'
+QA_TEST_PATH: './data/qa_dataset/qa_test_new_data.json'
 DATASTORE_PATH: './data/vectorstore/all_merged_law_text_list.json'
 VECTORSTORE_PATH: './data/vectorstore/vectorstore.pkl'
 PROMPT_PATH: './prompt/RAG_Prompt.txt'
