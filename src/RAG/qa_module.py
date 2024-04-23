@@ -27,15 +27,18 @@ class AnsweringModel:
     def __init__(self, prompt_path, model_name):
         with open(prompt_path, 'r') as f:
             self.prompt = f.read()
-        self.model = AutoModelForCausalLM.from_pretrained(model_name).to(self.device)
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
+        self.model = AutoModelForCausalLM.from_pretrained(model_name, load_in_4bit=True)
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
     
     def answer_question(self, question, relevant_docs, metadata, max_new_tokens):
         formatted_laws = '\n'.join([f"{meta} - {doc}" for doc, meta in zip(relevant_docs, metadata)])
         prompt = self.prompt.format(question, formatted_laws)
-        input_prompt = self.tokenizer(prompt, return_tensors='pt')
-        self.model.eval()
-        outputs = self.model.generate(**input_prompt, max_new_tokens=max_new_tokens).detach().cpu().tolist()
-        answer = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+        input_prompt = self.tokenizer(prompt, return_tensors='pt').to(self.device)
         
+        self.model.eval()
+        with torch.no_grad():
+            outputs = self.model.generate(**input_prompt, max_new_tokens=max_new_tokens).detach().cpu().tolist()
+        answer = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+    
         return answer
