@@ -76,7 +76,6 @@ nvidia-ml-py==12.535.133
 nvidia-nccl-cu11==2.14.3
 nvidia-nvtx-cu11==11.7.91
 openai==1.7.1
-packaging==23.2
 pandas==2.0.3
 parso==0.8.3
 pathtools==0.1.2

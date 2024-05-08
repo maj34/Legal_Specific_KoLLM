@@ -25,9 +25,7 @@ RUN apt-get install -y \
 WORKDIR /workspace
 RUN alias python=python3.8
 RUN alias pip=pip3
-COPY requirements.txt ./
 RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
 RUN pip install https://github.com/Dao-AILab/flash-attention/releases/download/v2.5.5/flash_attn-2.5.5+cu118torch2.0cxx11abiFALSE-cp38-cp38-linux_x86_64.whl
 RUN chmod -R 777 /workspace
 CMD ["bash"]
