@@ -11,19 +11,19 @@ from evaluation import evaluate_text_similarity
 def main(cfg : omegaconf.DictConfig):
     torch_seed(cfg.SEED)
 
-    # generate answer
+    # QA 데이터 로드
     qa_data = load_qa_dataset(cfg.QA_TEST_PATH)
-    qa_data = dict(list(qa_data.items())[:100]) # 100개만 추출
     print("QA test data loaded")
 
+    # Retriever, Generator 모델 로드
     retriever = RetrievalModel(vectorstore_path=cfg.VECTORSTORE_PATH,
+                               datastore_path=cfg.DATA.DATASTORE_PATH,
                                search_type=cfg.MODEL.SEARCH_TYPE,
                                max_docs=cfg.DATA.MAX_DOCS)
     generator = AnsweringModel(prompt_path=cfg.PROMPT_PATH, 
                                model_name=cfg.MODEL.MODEL_NAME)
     print("Models loaded")
     
-    result_name = f'{cfg.MODEL.MODEL_SHORT_NAME}_RAG_result.json'
     results = []
     BLEU = []
     ROUGE_L = []
@@ -32,9 +32,9 @@ def main(cfg : omegaconf.DictConfig):
         question = item['question']
         gold_answer = item['answer']
         
-        relevant_docs, metadata = retriever.retrieve_question(question)
+        retrieved_docs, metadata = retriever.retrieve_question(question, retriever_type=cfg.MODEL.RETRIEVER_TYPE)
         answer = generator.answer_question(question=question,
-                                           relevant_docs=relevant_docs, 
+                                           relevant_docs=retrieved_docs, 
                                            metadata=metadata,
                                            max_new_tokens=cfg.MODEL.MAX_NEW_TOKENS)
         
@@ -55,10 +55,9 @@ def main(cfg : omegaconf.DictConfig):
 
         results.append(result_dict)
     
-    # 평균 점수 추가
-    avg_BLEU = np.mean(BLEU)
-    avg_ROUGE_L = np.mean(ROUGE_L)
-    avg_METEOR = np.mean(METEOR)
+    avg_BLEU = np.mean(BLEU) * 100
+    avg_ROUGE_L = np.mean(ROUGE_L) * 100
+    avg_METEOR = np.mean(METEOR) * 100
 
     results.append({
         'avg_BLEU': avg_BLEU,
@@ -66,12 +65,13 @@ def main(cfg : omegaconf.DictConfig):
         'avg_METEOR': avg_METEOR
     })
 
+    result_name = f'{cfg.MODEL.MODEL_SHORT_NAME}_RAG_result.json'
     results_dir = os.path.dirname(f'{cfg.RESULT_PATH}/{cfg.MODEL.MODEL_SHORT_NAME}/{result_name}')
     os.makedirs(results_dir, exist_ok=True)
 
-    # json 파일 저장
+    # RAG 결과 json 파일 저장
     with open(f'{results_dir}/{result_name}', 'w', encoding='utf-8') as f:
-        json.dump(results, f)
+        json.dump(results, f, ensure_ascii=False)
     print("Results saved")
 
 if __name__ == "__main__":

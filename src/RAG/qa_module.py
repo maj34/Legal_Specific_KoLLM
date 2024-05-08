@@ -4,6 +4,8 @@ import torch
 
 from utils import load_config
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from langchain_community.retrievers import BM25Retriever
+from langchain.docstore.document import Document
 
 def load_qa_dataset(qa_path):
     with open(qa_path, 'r') as f:
@@ -11,17 +13,31 @@ def load_qa_dataset(qa_path):
     return data
 
 class RetrievalModel:
-    def __init__(self, vectorstore_path, search_type, max_docs):
+    def __init__(self, vectorstore_path, datastore_path, search_type, max_docs):
         with open(vectorstore_path, "rb") as f:
-            self.store = pickle.load(f)
-        self.retriever = self.store.as_retriever(search_type=search_type, search_kwargs={'k':max_docs})
+            self.vectorstore = pickle.load(f)
+        with open(datastore_path, 'r') as f:
+            data = json.load(f)
+        self.datastore = [
+            Document(
+                page_content=value,
+                metadata={'law':key}
+            )
+            for key, value in data.items()
+        ]
+        self.FAISS = self.vectorstore.as_retriever(search_type=search_type, search_kwargs={'k':max_docs})
+        self.BM25 = BM25Retriever.from_documents(self.datastore, k=max_docs)
     
-    def retrieve_question(self, question):
-        search_results = self.retriever.get_relevant_documents(question)
-        relevant_docs = [result.page_content for result in search_results]
-        metadata = [result.metadata['law'] for result in search_results] 
-
-        return relevant_docs, metadata
+    def retrieve_question(self, question, retriever_type):
+        if retriever_type == 'FAISS':
+            search_results = self.FAISS.get_relevant_documents(question)
+            retrieved_docs = [result.page_content for result in search_results]
+            metadata = [result.metadata['law'] for result in search_results] 
+        else: # BM25
+            search_results = self.BM25.get_relevant_documents(question)
+            retrieved_docs = [result.page_content for result in search_results]
+            metadata = [result.metadata['law'] for result in search_results]
+        return retrieved_docs, metadata
 
 class AnsweringModel:
     def __init__(self, prompt_path, model_name):
