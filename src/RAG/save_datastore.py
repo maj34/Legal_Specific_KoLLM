@@ -2,7 +2,7 @@ import omegaconf
 import json
 from langchain.docstore.document import Document
 
-from vectorstore import load_datastore, embed_documents, process_data
+from datastore import load_datastore, embed_documents, process_data
 from utils import load_config
 
 def save_vectorstore(cfg: omegaconf.DictConfig):
